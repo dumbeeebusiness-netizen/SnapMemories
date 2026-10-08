@@ -1,0 +1,40 @@
+name: SnapMemories
+options:
+  bundleIdPrefix: digital.iax
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  ZIPFoundation:
+    url: https://github.com/weichsel/ZIPFoundation
+    from: "0.9.19"
+targets:
+  SnapMemories:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    dependencies:
+      - package: ZIPFoundation
+    info:
+      path: Generated/Info.plist
+      properties:
+        CFBundleDisplayName: SnapMemories
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        LSSupportsOpeningDocumentsInPlace: true
+        UIFileSharingEnabled: true
+        NSPhotoLibraryUsageDescription: Damit deine Snapchat Memories in ein Album gelegt werden können.
+        NSPhotoLibraryAddUsageDescription: Damit deine Snapchat Memories in die Fotos-App importiert werden können.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: digital.iax.snapmemories
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
