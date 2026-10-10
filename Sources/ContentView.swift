@@ -5,11 +5,13 @@ struct ContentView: View {
     @StateObject private var vm = ImportViewModel()
     @State private var showPicker = false
     @State private var confirmReset = false
+    @State private var confirmDelete = false
+    @State private var showSnapchat = false
 
     var body: some View {
         NavigationStack {
             Form {
-                howToSection
+                fetchSection
                 exportSection
                 if !vm.warnings.isEmpty { warningSection }
                 if vm.phase != .idle && vm.phase != .scanning && !vm.items.isEmpty {
@@ -26,6 +28,9 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("SnapMemories")
+            .onAppear {
+                if vm.items.isEmpty && vm.phase == .idle { vm.loadDownloadedExports() }
+            }
             .fileImporter(isPresented: $showPicker,
                           allowedContentTypes: [.zip, .folder, .json, .html],
                           allowsMultipleSelection: true) { result in
@@ -34,6 +39,13 @@ struct ContentView: View {
             .confirmationDialog("Verlauf wirklich zurücksetzen? Beim nächsten Import werden alle Memories erneut ins Album gelegt.",
                                 isPresented: $confirmReset, titleVisibility: .visible) {
                 Button("Zurücksetzen", role: .destructive) { vm.resetHistory() }
+            }
+            .confirmationDialog("Heruntergeladene Export-ZIPs löschen? Bereits importierte Fotos bleiben im Album.",
+                                isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button("Löschen", role: .destructive) { vm.deleteDownloadedExports() }
+            }
+            .fullScreenCover(isPresented: $showSnapchat) {
+                SnapchatFetchView(vm: vm)
             }
         }
     }
@@ -55,8 +67,37 @@ struct ContentView: View {
         }
     }
 
+    private var fetchSection: some View {
+        Section {
+            Button {
+                showSnapchat = true
+            } label: {
+                Label("Bei Snapchat einloggen & Export holen", systemImage: "arrow.down.circle.fill")
+                    .font(.headline)
+            }
+            .disabled(vm.phase == .importing)
+
+            if !vm.downloadedExports.isEmpty {
+                LabeledContent("In der App gespeichert",
+                               value: "\(vm.downloadedExports.count) ZIP · \(vm.downloadedSizeText)")
+                Button {
+                    vm.loadDownloadedExports()
+                } label: {
+                    Label("Gespeicherte Exporte einlesen", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .disabled(vm.phase == .importing)
+                Button("Gespeicherte Exporte löschen", role: .destructive) { confirmDelete = true }
+                    .disabled(vm.phase == .importing)
+            }
+        } header: {
+            Text("Direkt von Snapchat")
+        } footer: {
+            Text("Du loggst dich im eingebauten Browser bei Snapchat ein, forderst den Export an und tippst später auf «Download». Die App lädt die Dateien selbst und liest sie automatisch ein. Dein Passwort geht nur an Snapchat.")
+        }
+    }
+
     private var exportSection: some View {
-        Section("Export") {
+        Section("Oder: Dateien aus der Dateien-App") {
             Button {
                 showPicker = true
             } label: {

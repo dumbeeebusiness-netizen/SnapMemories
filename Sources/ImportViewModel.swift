@@ -49,6 +49,36 @@ final class ImportViewModel: ObservableObject {
 
     // MARK: - Export laden
 
+    @Published var downloadedExports: [URL] = ExportStore.zips()
+    private var scanGeneration = 0
+
+    var downloadedSizeText: String {
+        ByteCountFormatter.string(fromByteCount: ExportStore.totalSize(), countStyle: .file)
+    }
+
+    /// Wird vom eingebauten Snapchat-Browser nach jedem fertigen Download aufgerufen.
+    func didDownloadExport(_ file: URL) {
+        downloadedExports = ExportStore.zips()
+        guard phase != .importing else { return }
+        load(downloadedExports)
+    }
+
+    func loadDownloadedExports() {
+        downloadedExports = ExportStore.zips()
+        guard !downloadedExports.isEmpty else { return }
+        load(downloadedExports)
+    }
+
+    func deleteDownloadedExports() {
+        ExportStore.deleteAll()
+        downloadedExports = []
+        items = []
+        pickedNames = []
+        warnings = []
+        phase = .idle
+        Task { await engine.reset() }
+    }
+
     func load(_ urls: [URL]) {
         stopAccessing()
         for url in urls where url.startAccessingSecurityScopedResource() {
@@ -59,10 +89,13 @@ final class ImportViewModel: ObservableObject {
         items = []
         warnings = []
         log = []
+        scanGeneration += 1
+        let generation = scanGeneration
 
         Task {
             do {
                 let result = try await engine.scan(urls)
+                guard generation == scanGeneration else { return }
                 items = result.items
                 warnings = result.warnings
                 // Ohne Dateien im Export bleibt nur der Download über die Links

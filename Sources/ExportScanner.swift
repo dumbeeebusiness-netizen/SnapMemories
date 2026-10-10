@@ -32,13 +32,18 @@ enum ExportScanner {
         var meta: [MetaEntry] = []
         var locals: [String: LocalMedia] = [:]
         var foundMetaFile = false
+        var warnings: [String] = []
 
         for url in urls {
             let isDir = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
             if isDir {
                 scanFolder(url, meta: &meta, locals: &locals, foundMeta: &foundMetaFile)
             } else if url.pathExtension.lowercased() == "zip" {
-                try scanZip(url, meta: &meta, locals: &locals, foundMeta: &foundMetaFile)
+                do {
+                    try scanZip(url, meta: &meta, locals: &locals, foundMeta: &foundMetaFile)
+                } catch {
+                    warnings.append("\(url.lastPathComponent) ist beschädigt oder unvollständig – bitte nochmals herunterladen.")
+                }
             } else {
                 let name = url.lastPathComponent.lowercased()
                 if let data = try? Data(contentsOf: url) {
@@ -55,7 +60,6 @@ enum ExportScanner {
             return seen.insert(k).inserted
         }
 
-        var warnings: [String] = []
         if !foundMetaFile {
             warnings.append("Keine memories_history.json/.html gefunden – das Datum stammt nur aus dem Dateinamen (ohne Uhrzeit).")
         }
